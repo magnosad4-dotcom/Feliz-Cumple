@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Una Carta Especial Para Ti — ¡Feliz Cumpleaños!</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Playfair Display, Great Vibes (caligrafía para firma) & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Tone.js para melodía de Cumpleaños Feliz sin URLs externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti para celebración al abrir la carta -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+                        script: ['"Great Vibes"', 'cursive'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        midnight: '#090A0F',
+                        velvet: '#13151F',
+                        cream: '#FDFBF7',
+                        parchment: '#F5EFE6',
+                        champagne: '#F3E5AB',
+                        gold: {
+                            300: '#F6E2A6',
+                            400: '#E5C158',
+                            500: '#D4AF37',
+                            600: '#A68321',
+                        },
+                        rosegold: '#D8A48F'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #090A0F;
+            color: #F8FAFC;
+            overflow-x: hidden;
+        }
+
+        /* Textura sutil de papel editorial crema */
+        .paper-texture {
+            background-color: #FDFBF7;
+            background-image: radial-gradient(rgba(212, 175, 55, 0.08) 1px, transparent 0),
+                              radial-gradient(rgba(166, 131, 33, 0.05) 1px, #FDFBF7 0);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+
+        /* =========================================
+           ANIMACIÓN DE LLEGADA Y APERTURA DEL SOBRE 3D
+           ========================================= */
+        .scene-perspective {
+            perspective: 1400px;
+        }
+
+        @keyframes envelopeArrive {
+            0% {
+                opacity: 0;
+                transform: translateY(140px) scale(0.75) rotateX(22deg) rotateZ(-6deg);
+            }
+            65% {
+                opacity: 1;
+                transform: translateY(-12px) scale(1.02) rotateX(4deg) rotateZ(1.5deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotateX(0deg) rotateZ(0deg);
+            }
+        }
+
+        @keyframes gentleHoverFloat {
+            0%, 100% { transform: translateY(0px) rotateZ(0deg); }
+            50% { transform: translateY(-10px) rotateZ(0.8deg); }
+        }
+
+        .envelope-entrance {
+            animation: envelopeArrive 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .envelope-floating {
+            animation: gentleHoverFloat 4.5s ease-in-out infinite;
+        }
+
+        .envelope-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            height: 290px;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.4s ease;
+        }
+
+        .envelope-wrapper:hover {
+            transform: scale(1.03);
+        }
+
+        .envelope-back {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, #EFE5D5 0%, #DFD1BC 100%);
+            border-radius: 16px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.75), 0 0 40px rgba(212, 175, 55, 0.22);
+            border: 1px solid rgba(212, 175, 55, 0.45);
+        }
+
+        .letter-preview-card {
+            position: absolute;
+            left: 6%;
+            right: 6%;
+            bottom: 12px;
+            height: 82%;
+            background: #FDFBF7;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            z-index: 2;
+            transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .envelope-front-pocket {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            border-radius: 16px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .envelope-front-pocket::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #F7EFE2 0%, #E8DAC3 100%);
+            clip-path: polygon(0 0, 52% 55%, 0 100%);
+        }
+
+        .envelope-front-pocket::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(225deg, #F5ECE0 0%, #E4D4BA 100%);
+            clip-path: polygon(100% 0, 48% 55%, 100% 100%);
+        }
+
+        .envelope-bottom-flap {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            background: linear-gradient(to top, #E5D4B7 0%, #F6EDE0 100%);
+            clip-path: polygon(0 100%, 50% 46%, 100% 100%);
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
+            pointer-events: none;
+        }
+
+        .envelope-top-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 58%;
+            background: linear-gradient(180deg, #FAF3E8 0%, #E7D6BA 100%);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease 0.3s;
+            z-index: 5;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.15));
+        }
+
+        .wax-seal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -45%);
+            z-index: 6;
+            width: 68px;
+            height: 68px;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 30% 30%, #F7E199, #C89D28 65%, #8A6811 100%);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.6), 0 0 0 0 rgba(212, 175, 55, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.45s ease;
+            animation: sealPulse 2.4s infinite;
+        }
+
+        @keyframes sealPulse {
+            0% { box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 0 rgba(212, 175, 55, 0.65); }
+            70% { box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 18px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+
+        .envelope-wrapper.is-open .envelope-top-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        .envelope-wrapper.is-open .wax-seal {
+            opacity: 0;
+            transform: translate(-50%, -45%) scale(0.4);
+            pointer-events: none;
+        }
+
+        .envelope-wrapper.is-open .letter-preview-card {
+            transform: translateY(-115px) scale(1.04);
+            z-index: 4;
+        }
+
+        /* Estilo Polaroid / Editorial para recuerdos */
+        .polaroid-card {
+            background: #FFFFFF;
+            padding: 12px 12px 22px 12px;
+            box-shadow: 0 15px 35px -5px rgba(20, 16, 10, 0.14), 0 4px 12px rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .polaroid-card:hover {
+            transform: translateY(-8px) rotate(0deg) !important;
+            box-shadow: 0 25px 45px -8px rgba(20, 16, 10, 0.22), 0 0 25px rgba(212, 175, 55, 0.25);
+        }
+
+        /* Animación de barras de audio */
+        .eq-bar { transition: height 0.2s ease; }
+        .playing .eq-bar:nth-child(1) { animation: eq 0.75s infinite alternate; }
+        .playing .eq-bar:nth-child(2) { animation: eq 0.55s infinite alternate 0.2s; }
+        .playing .eq-bar:nth-child(3) { animation: eq 0.85s infinite alternate 0.35s; }
+        .playing .eq-bar:nth-child(4) { animation: eq 0.65s infinite alternate 0.1s; }
+        @keyframes eq {
+            0% { height: 4px; }
+            100% { height: 18px; }
+        }
+
+        .fade-transition {
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-gold-500 selection:text-midnight">
+
+    <!-- Canvas de fondo con destellos dorados y pétalos flotantes -->
+    <canvas id="magic-bg-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+    <!-- Notificaciones Toast Elegantes -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+    <!-- =========================================================================
+         1. ESCENA INICIAL: SOBRE / CARTA LLEGANDO CON MOVIMIENTO 3D
+         ========================================================================= -->
+    <section id="envelope-stage" class="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-12 fade-transition">
+        <div class="absolute w-[340px] h-[340px] sm:w-[540px] sm:h-[540px] bg-gold-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="text-center mb-10 space-y-2">
+            <span class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-300 text-xs tracking-[0.25em] uppercase">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-gold-400"></i>
+                <span>Entrega Especial</span>
+            </span>
+            <h1 class="font-serif text-2xl sm:text-4xl text-white font-semibold tracking-wide pt-2">
+                Ha llegado una carta para ti
+            </h1>
+        </div>
+
+        <div id="envelope-arrival-box" class="w-full flex justify-center scene-perspective envelope-entrance">
+            <div id="envelope-float-box" class="w-full flex justify-center envelope-floating">
+                <div id="birthday-envelope" onclick="openBirthdayLetter()" class="envelope-wrapper group" role="button" tabindex="0" aria-label="Abrir carta de cumpleaños">
+                    <div class="envelope-back"></div>
+
+                    <div class="letter-preview-card">
+                        <span class="text-[10px] uppercase tracking-[0.25em] text-gold-600 font-semibold">Para ti, en tu día</span>
+                        <h2 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800 mt-1">¡Feliz Cumpleaños!</h2>
+                        <div class="w-12 h-0.5 bg-gold-500/60 my-2.5"></div>
+                        <p class="font-script text-2xl text-gold-600">— Ariel</p>
+                    </div>
+
+                    <div class="envelope-front-pocket"></div>
+                    <div class="envelope-bottom-flap"></div>
+                    <div class="envelope-top-flap"></div>
+
+                    <div class="wax-seal group-hover:scale-110">
+                        <div class="w-12 h-12 rounded-full border border-amber-200/60 flex items-center justify-center">
+                            <i data-lucide="heart" class="w-6 h-6 text-amber-950 fill-amber-950/80"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center space-y-3">
+            <button onclick="openBirthdayLetter()" class="px-7 py-3.5 rounded-full bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 text-midnight font-semibold text-xs sm:text-sm uppercase tracking-[0.18em] shadow-xl shadow-gold-500/25 hover:scale-105 hover:brightness-110 transition-all flex items-center gap-2.5 mx-auto">
+                <i data-lucide="mail-open" class="w-4 h-4"></i>
+                <span>Haz clic para abrir tu carta</span>
+            </button>
+            <p class="text-xs text-slate-400 tracking-wider">Activa el sonido para una experiencia mágica</p>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         2. VISTA DESPLEGADA DE LA CARTA DE FELICITACIÓN Y RECUERDOS
+         ========================================================================= -->
+    <main id="letter-content-stage" class="relative z-10 hidden opacity-0 translate-y-8 fade-transition pb-32">
+
+        <header class="sticky top-0 z-30 bg-midnight/85 backdrop-blur-md border-b border-gold-500/20">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+                <button onclick="closeAndReplayEnvelope()" class="inline-flex items-center gap-2 text-xs sm:text-sm text-gold-300 hover:text-white transition-colors px-3 py-1.5 rounded-full border border-gold-500/30 hover:bg-gold-500/10">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <span>Ver sobre de nuevo</span>
+                </button>
+
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button onclick="openModal('edit-letter-modal')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-gold-500/30 text-gold-300 text-xs font-medium transition-all">
+                        <i data-lucide="pen-line" class="w-3.5 h-3.5"></i>
+                        <span>Editar texto</span>
+                    </button>
+                    <button onclick="openModal('add-memory-modal')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 text-midnight font-semibold text-xs transition-all hover:brightness-110 shadow-md">
+                        <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
+                        <span>+ Agregar recuerdo</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- HOJA PRINCIPAL DE LA CARTA EDITORIAL -->
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14">
+            <article class="paper-texture text-stone-800 rounded-[28px] sm:rounded-[36px] p-7 sm:p-14 md:p-16 shadow-[0_25px_80px_rgba(0,0,0,0.85)] border-2 border-gold-500/40 relative overflow-hidden">
+
+                <!-- Esquinas ornamentales doradas -->
+                <div class="w-16 h-16 border-t-2 border-l-2 border-gold-500/50 rounded-tl-2xl absolute top-5 left-5 pointer-events-none"></div>
+                <div class="w-16 h-16 border-t-2 border-r-2 border-gold-500/50 rounded-tr-2xl absolute top-5 right-5 pointer-events-none"></div>
+                <div class="w-16 h-16 border-b-2 border-l-2 border-gold-500/50 rounded-bl-2xl absolute bottom-5 left-5 pointer-events-none"></div>
+                <div class="w-16 h-16 border-b-2 border-r-2 border-gold-500/50 rounded-br-2xl absolute bottom-5 right-5 pointer-events-none"></div>
+
+                <!-- Encabezado de la Carta -->
+                <div class="text-center space-y-4 max-w-2xl mx-auto">
+                    <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-600 text-xs font-semibold uppercase tracking-[0.22em]">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Dedicatoria</span>
+                    </div>
+
+                    <h1 id="letter-title-display" class="font-serif text-3xl sm:text-5xl font-bold text-stone-900 tracking-tight leading-tight">
+                        Feliz Cumpleaños....
+                    </h1>
+
+                    <div class="flex items-center justify-center gap-3 pt-1">
+                        <span class="h-px w-12 bg-gold-500/50"></span>
+                        <i data-lucide="heart" class="w-4 h-4 text-gold-500"></i>
+                        <span class="h-px w-12 bg-gold-500/50"></span>
+                    </div>
+                </div>
+
+                <!-- Cuerpo del Mensaje Principal Único de Ariel -->
+                <div class="mt-8 sm:mt-10 max-w-2xl mx-auto space-y-6 text-stone-700 text-base sm:text-lg leading-relaxed font-normal">
+                    <p id="letter-body-display" class="whitespace-pre-line transition-opacity duration-500">Quizás yo no tenga derecho a escribirte, pero mi corazón nunca aprendió a ignorar esta fecha. Hoy cumples un año más y, aunque ya no caminemos juntos, sigo deseando que la vida te trate con la misma dulzura con la que alguna vez trataste la mía. Extraño aquellas conversaciones que hacían más ligeros mis días y tu forma de hacerme sentir en casa. No me duele que el tiempo haya pasado, me duele que ya no pueda compartirlo contigo; aun así, me basta saber que existes en algún lugar persiguiendo tu felicidad 🫀🥹
+
+FELIZ CUMPLEAÑOS....</p>
+
+                    <!-- Firma Caligráfica Única de Ariel -->
+                    <div class="pt-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-t border-gold-500/20">
+                        <div>
+                            <p id="letter-sender-display" class="font-script text-3xl sm:text-4xl text-gold-600">— Ariel</p>
+                        </div>
+
+                        <button onclick="openModal('edit-letter-modal')" class="self-start sm:self-end inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-stone-900/5 hover:bg-stone-900/10 text-stone-700 text-xs font-medium transition-colors border border-gold-500/25">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-gold-600"></i>
+                            <span>Editar texto</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN INTERACTIVA: PUNTOS DE HISTORIA ("Recuerdos...." y "Momentos felices") -->
+                <div class="mt-14 pt-12 border-t border-gold-500/25">
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                        <div>
+                            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-stone-900">Recuerdos.... & Momentos felices</h2>
+                        </div>
+                        <button onclick="openModal('add-memory-modal')" class="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-stone-900 text-cream hover:bg-gold-600 hover:text-white text-xs font-semibold tracking-wider uppercase transition-all shadow-md">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>+ Agregar recuerdo</span>
+                        </button>
+                    </div>
+
+                    <!-- Barra conectora de Puntos Brillantes -->
+                    <div id="story-dots-bar" class="flex items-center justify-between relative mb-10 px-5 py-3.5 bg-parchment/80 rounded-2xl border border-gold-500/20 overflow-x-auto gap-6"></div>
+
+                    <!-- Galería de Tarjetas Polaroid con Fotos y Videos -->
+                    <div id="memories-grid" class="grid grid-cols-1 md:grid-cols-3 gap-7"></div>
+                </div>
+
+                <!-- APARTADO FINAL PARA DEJAR UN MENSAJE MÁS -->
+                <div class="mt-14 pt-10 border-t border-gold-500/25 max-w-2xl mx-auto">
+                    <div class="bg-parchment/85 border border-gold-500/30 rounded-2xl p-6 sm:p-7 shadow-inner">
+                        <div class="flex items-center justify-between gap-2 mb-4">
+                            <h3 class="font-serif text-xl sm:text-2xl font-bold text-stone-900">Un mensaje más</h3>
+                            <span id="extra-message-badge" class="hidden text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold-500/20 text-gold-600 font-semibold">Guardado</span>
+                        </div>
+
+                        <div id="extra-message-display-box" class="hidden mb-5 p-4 rounded-xl bg-white/80 border border-gold-500/20">
+                            <p id="extra-message-text" class="text-stone-700 text-base leading-relaxed whitespace-pre-line"></p>
+                        </div>
+
+                        <form id="extra-message-form" class="space-y-3">
+                            <textarea id="extra-message-input" rows="3" required placeholder="Escribe aquí un mensaje más..." class="w-full px-4 py-3 rounded-xl bg-white border border-gold-500/35 focus:border-gold-600 focus:outline-none text-sm text-stone-800 leading-relaxed resize-none"></textarea>
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 text-midnight font-semibold text-xs uppercase tracking-wider hover:brightness-110 transition-all shadow-md">
+                                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                    <span>Dejar mensaje</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </article>
+        </div>
+    </main>
+
+    <!-- =========================================================================
+         3. REPRODUCTOR DE MÚSICA FLOTANTE + BOTÓN "AGREGAR CANCIÓN"
+         ========================================================================= -->
+    <div id="floating-music-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-xl bg-velvet/90 backdrop-blur-xl rounded-full px-4 py-2.5 sm:px-5 sm:py-3 shadow-[0_15px_40px_rgba(0,0,0,0.85)] border border-gold-500/40 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <button id="music-toggle-btn" onclick="toggleMusicPlayback()" class="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-midnight flex items-center justify-center shrink-0 hover:scale-105 transition-transform shadow-md" aria-label="Reproducir o pausar canción">
+                <i id="icon-play" data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>
+                <i id="icon-pause" data-lucide="pause" class="w-4 h-4 fill-current hidden"></i>
+            </button>
+
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <p id="song-name-label" class="text-xs sm:text-sm font-semibold text-white truncate">Cumpleaños Feliz (Melodía Mágica)</p>
+                    <div id="audio-eq" class="flex items-end gap-0.5 h-3.5 shrink-0">
+                        <span class="eq-bar w-0.5 h-1 bg-gold-400 rounded-full"></span>
+                        <span class="eq-bar w-0.5 h-2 bg-gold-400 rounded-full"></span>
+                        <span class="eq-bar w-0.5 h-1.5 bg-gold-400 rounded-full"></span>
+                        <span class="eq-bar w-0.5 h-1 bg-gold-400 rounded-full"></span>
+                    </div>
+                </div>
+                <p id="song-status-label" class="text-[11px] text-gold-300/80 truncate">Toca Play o sube tu propia canción</p>
+            </div>
+        </div>
+
+        <div class="shrink-0">
+            <input type="file" id="song-file-input" accept="audio/*" class="hidden" onchange="handleSongFileUpload(event)">
+            <button onclick="document.getElementById('song-file-input').click()" class="px-3.5 py-2 rounded-full bg-gold-500/20 hover:bg-gold-500 text-gold-300 hover:text-midnight border border-gold-500/40 text-xs font-semibold transition-all flex items-center gap-1.5">
+                <i data-lucide="music" class="w-3.5 h-3.5"></i>
+                <span>Agregar canción</span>
+            </button>
+        </div>
+    </div>
+
+    <audio id="uploaded-audio-player" loop></audio>
+
+    <!-- =========================================================================
+         MODALES INTERACTIVOS
+         ========================================================================= -->
+
+    <!-- Modal 1: Lightbox Ampliado de Foto o Video -->
+    <div id="view-memory-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="bg-cream text-stone-800 rounded-3xl max-w-xl w-full overflow-hidden border-2 border-gold-500/50 shadow-2xl">
+            <div class="relative bg-stone-950 flex items-center justify-center max-h-[75vh]">
+                <img id="vm-image" src="" alt="Recuerdo" class="hidden w-full max-h-[72vh] object-contain">
+                <video id="vm-video" src="" controls playsinline loop class="hidden w-full max-h-[72vh] object-contain bg-black"></video>
+                <button onclick="closeMemoryLightbox()" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/75 text-white hover:text-gold-400 flex items-center justify-center">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="px-6 py-4 bg-cream flex items-center justify-between border-t border-gold-500/20">
+                <h3 id="vm-label" class="font-serif text-xl sm:text-2xl font-bold text-stone-900"></h3>
+                <span class="text-gold-600"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Agregar Foto o Video a la Historia -->
+    <div id="add-memory-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-velvet text-white rounded-3xl max-w-md w-full p-6 sm:p-8 border border-gold-500/40 shadow-2xl">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <span class="text-[11px] uppercase tracking-widest text-gold-400">Historia</span>
+                    <h3 class="font-serif text-2xl font-bold">+ Agregar recuerdo</h3>
+                </div>
+                <button onclick="closeModal('add-memory-modal')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form id="add-memory-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-300 mb-1.5">Selecciona Foto o Video</label>
+                    <label class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gold-500/40 rounded-2xl cursor-pointer bg-midnight/60 hover:bg-midnight transition-colors overflow-hidden relative">
+                        <img id="memory-photo-preview" src="" alt="Vista previa" class="hidden absolute inset-0 w-full h-full object-cover">
+                        <video id="memory-video-preview" src="" muted playsinline loop class="hidden absolute inset-0 w-full h-full object-cover"></video>
+                        <div id="memory-photo-placeholder" class="flex flex-col items-center justify-center text-center p-3">
+                            <i data-lucide="upload-cloud" class="w-7 h-7 text-gold-400 mb-1"></i>
+                            <span class="text-xs text-slate-300 font-medium">Toca para subir foto o video desde tu dispositivo</span>
+                        </div>
+                        <input type="file" id="memory-media-input" accept="image/*,video/*" required class="hidden" onchange="previewMemoryMedia(event)">
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-300 mb-1.5">Etiqueta</label>
+                    <select id="memory-label-select" class="w-full px-3.5 py-2.5 rounded-xl bg-midnight border border-slate-700 focus:border-gold-400 focus:outline-none text-sm text-white">
+                        <option value="Recuerdos....">Recuerdos....</option>
+                        <option value="Momentos felices">Momentos felices</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold-400 to-gold-600 text-midnight font-semibold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-lg">
+                    Añadir a la historia
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Editar Texto de la Carta de Ariel -->
+    <div id="edit-letter-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-velvet text-white rounded-3xl max-w-lg w-full p-6 sm:p-8 border border-gold-500/40 shadow-2xl">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <span class="text-[11px] uppercase tracking-widest text-gold-400">Dedicatoria de Ariel</span>
+                    <h3 class="font-serif text-2xl font-bold">Editar texto</h3>
+                </div>
+                <button onclick="closeModal('edit-letter-modal')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form id="edit-letter-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-300 mb-1">Título</label>
+                    <input type="text" id="edit-title-input" required class="w-full px-4 py-2.5 rounded-xl bg-midnight border border-slate-700 focus:border-gold-400 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-300 mb-1">Texto de la carta</label>
+                    <textarea id="edit-body-input" rows="7" required class="w-full px-4 py-2.5 rounded-xl bg-midnight border border-slate-700 focus:border-gold-400 focus:outline-none text-sm leading-relaxed resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-300 mb-1">Firma</label>
+                    <input type="text" id="edit-sender-input" required class="w-full px-4 py-2.5 rounded-xl bg-midnight border border-slate-700 focus:border-gold-400 focus:outline-none text-sm">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold-400 to-gold-600 text-midnight font-semibold text-xs uppercase tracking-widest hover:brightness-110 transition-all">
+                    Guardar cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. NOTIFICACIONES TOAST
+        // ==========================================
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-velvet/95 text-white border border-gold-500/50 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm transform transition-all duration-300 translate-x-full opacity-0';
+            toast.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-gold-400 shrink-0"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        // ==========================================
+        // 2. REPRODUCTOR DE MÚSICA (MELODÍA + SUBIDA DE MP3/WAV)
+        // ==========================================
+        let isMusicPlaying = false;
+        let isCustomAudioLoaded = false;
+        let bdaySynth = null;
+        let bdaySequence = null;
+        const customAudioEl = document.getElementById('uploaded-audio-player');
+
+        function updateMusicUI(playing) {
+            isMusicPlaying = playing;
+            const playIcon = document.getElementById('icon-play');
+            const pauseIcon = document.getElementById('icon-pause');
+            const eq = document.getElementById('audio-eq');
+            const status = document.getElementById('song-status-label');
+
+            if (playing) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                eq.classList.add('playing');
+                status.textContent = isCustomAudioLoaded ? 'Reproduciendo tu canción...' : 'Sonando melodía de cumpleaños...';
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                eq.classList.remove('playing');
+                status.textContent = 'En pausa';
+            }
+        }
+
+        async function startMusicPlayback() {
+            if (isMusicPlaying) return;
+
+            if (isCustomAudioLoaded) {
+                try {
+                    await customAudioEl.play();
+                    updateMusicUI(true);
+                } catch (err) {
+                    showToast('Toca Play para iniciar tu canción');
+                }
+                return;
+            }
+
+            try {
+                await Tone.start();
+                if (!bdaySynth) {
+                    const reverb = new Tone.Reverb({ decay: 2.8, wet: 0.35 }).toDestination();
+                    bdaySynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.04, decay: 0.35, sustain: 0.25, release: 1.1 },
+                        volume: -8
+                    }).connect(reverb);
+
+                    const melodyNotes = [
+                        { time: '0:0:0', note: 'G4', dur: '8n' }, { time: '0:0:2', note: 'G4', dur: '8n' },
+                        { time: '0:1:0', note: 'A4', dur: '4n' }, { time: '0:2:0', note: 'G4', dur: '4n' },
+                        { time: '0:3:0', note: 'C5', dur: '4n' }, { time: '1:0:0', note: 'B4', dur: '2n' },
+                        { time: '1:2:0', note: 'G4', dur: '8n' }, { time: '1:2:2', note: 'G4', dur: '8n' },
+                        { time: '1:3:0', note: 'A4', dur: '4n' }, { time: '2:0:0', note: 'G4', dur: '4n' },
+                        { time: '2:1:0', note: 'D5', dur: '4n' }, { time: '2:2:0', note: 'C5', dur: '2n' },
+                        { time: '3:0:0', note: 'G4', dur: '8n' }, { time: '3:0:2', note: 'G4', dur: '8n' },
+                        { time: '3:1:0', note: 'G5', dur: '4n' }, { time: '3:2:0', note: 'E5', dur: '4n' },
+                        { time: '3:3:0', note: 'C5', dur: '4n' }, { time: '4:0:0', note: 'B4', dur: '4n' },
+                        { time: '4:1:0', note: 'A4', dur: '2n' }, { time: '4:3:0', note: 'F5', dur: '8n' },
+                        { time: '4:3:2', note: 'F5', dur: '8n' }, { time: '5:0:0', note: 'E5', dur: '4n' },
+                        { time: '5:1:0', note: 'C5', dur: '4n' }, { time: '5:2:0', note: 'D5', dur: '4n' },
+                        { time: '5:3:0', note: 'C5', dur: '2n' }
+                    ];
+
+                    bdaySequence = new Tone.Part((time, val) => {
+                        bdaySynth.triggerAttackRelease(val.note, val.dur, time);
+                    }, melodyNotes);
+
+                    bdaySequence.loop = true;
+                    bdaySequence.loopEnd = '6:2:0';
+                }
+
+                Tone.Transport.bpm.value = 104;
+                bdaySequence.start(0);
+                Tone.Transport.start();
+                updateMusicUI(true);
+            } catch (e) {
+                console.warn('Audio en espera de interacción:', e);
+            }
+        }
+
+        function stopMusicPlayback() {
+            if (isCustomAudioLoaded) {
+                customAudioEl.pause();
+            } else if (typeof Tone !== 'undefined') {
+                Tone.Transport.pause();
+            }
+            updateMusicUI(false);
+        }
+
+        function toggleMusicPlayback() {
+            if (isMusicPlaying) {
+                stopMusicPlayback();
+            } else {
+                startMusicPlayback();
+            }
+        }
+
+        function handleSongFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!isCustomAudioLoaded && typeof Tone !== 'undefined') {
+                Tone.Transport.stop();
+            }
+
+            const fileUrl = URL.createObjectURL(file);
+            customAudioEl.src = fileUrl;
+            isCustomAudioLoaded = true;
+
+            const cleanName = file.name.replace(/\.[^/.]+$/, '');
+            document.getElementById('song-name-label').textContent = cleanName;
+            customAudioEl.play().then(() => {
+                updateMusicUI(true);
+                showToast(`Canción agregada: "${cleanName}"`);
+            }).catch(() => {
+                updateMusicUI(false);
+                showToast('Canción cargada. Presiona Play');
+            });
+        }
+
+        // ==========================================
+        // 3. ANIMACIÓN DE APERTURA DEL SOBRE Y CONFETI
+        // ==========================================
+        let isLetterOpened = false;
+
+        function launchCelebrationConfetti() {
+            if (typeof confetti !== 'function') return;
+            confetti({
+                particleCount: 80,
+                spread: 75,
+                origin: { y: 0.6 },
+                colors: ['#D4AF37', '#F6E2A6', '#FFF5D1', '#D8A48F', '#FFFFFF']
+            });
+        }
+
+        function openBirthdayLetter() {
+            if (isLetterOpened) return;
+            isLetterOpened = true;
+
+            const envelope = document.getElementById('birthday-envelope');
+            const envelopeStage = document.getElementById('envelope-stage');
+            const letterStage = document.getElementById('letter-content-stage');
+
+            envelope.classList.add('is-open');
+            launchCelebrationConfetti();
+            startMusicPlayback();
+
+            setTimeout(() => {
+                envelopeStage.classList.add('opacity-0', '-translate-y-6');
+                setTimeout(() => {
+                    envelopeStage.classList.add('hidden');
+                    letterStage.classList.remove('hidden');
+                    requestAnimationFrame(() => {
+                        letterStage.classList.remove('opacity-0', 'translate-y-8');
+                    });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 550);
+            }, 950);
+        }
+
+        function closeAndReplayEnvelope() {
+            isLetterOpened = false;
+            const envelope = document.getElementById('birthday-envelope');
+            const envelopeStage = document.getElementById('envelope-stage');
+            const letterStage = document.getElementById('letter-content-stage');
+            const arrivalBox = document.getElementById('envelope-arrival-box');
+
+            letterStage.classList.add('opacity-0', 'translate-y-8');
+            setTimeout(() => {
+                letterStage.classList.add('hidden');
+                envelope.classList.remove('is-open');
+
+                arrivalBox.classList.remove('envelope-entrance');
+                void arrivalBox.offsetWidth;
+                arrivalBox.classList.add('envelope-entrance');
+
+                envelopeStage.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    envelopeStage.classList.remove('opacity-0', '-translate-y-6');
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 450);
+        }
+
+        // ==========================================
+        // 4. PUNTOS DE HISTORIA (FOTOS Y VIDEOS) + SUBIDA MULTIMEDIA
+        // ==========================================
+        let memories = [];
+
+        let uploadedMediaDataUrl = '';
+        let uploadedMediaType = 'image';
+
+        function previewMemoryMedia(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const isVideo = file.type.startsWith('video/');
+            uploadedMediaType = isVideo ? 'video' : 'image';
+
+            const previewImg = document.getElementById('memory-photo-preview');
+            const previewVid = document.getElementById('memory-video-preview');
+            const placeholder = document.getElementById('memory-photo-placeholder');
+
+            if (isVideo) {
+                uploadedMediaDataUrl = URL.createObjectURL(file);
+                previewImg.classList.add('hidden');
+                previewVid.src = uploadedMediaDataUrl;
+                previewVid.classList.remove('hidden');
+                previewVid.play().catch(() => {});
+                placeholder.classList.add('hidden');
+            } else {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedMediaDataUrl = e.target.result;
+                    previewVid.classList.add('hidden');
+                    previewImg.src = uploadedMediaDataUrl;
+                    previewImg.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function renderMemories() {
+            const dotsBar = document.getElementById('story-dots-bar');
+            const grid = document.getElementById('memories-grid');
+
+            if (!memories.length) {
+                dotsBar.innerHTML = `<p class="text-xs text-stone-500 italic py-1">Aún no hay puntos en la historia. Toca "+ Agregar recuerdo" para sumar fotos o videos.</p>`;
+                grid.innerHTML = '';
+                lucide.createIcons();
+                return;
+            }
+
+            dotsBar.innerHTML = memories.map((m, idx) => `
+                <button onclick="openMemoryModal(${m.id})" class="flex flex-col items-center gap-1.5 group shrink-0 focus:outline-none">
+                    <span class="w-4 h-4 rounded-full bg-gold-500 ring-4 ring-gold-500/25 group-hover:scale-125 group-hover:ring-gold-500/50 transition-all shadow-md"></span>
+                    <span class="text-xs font-serif font-semibold text-stone-800 group-hover:text-gold-600 whitespace-nowrap">${m.label}</span>
+                </button>
+                ${idx < memories.length - 1 ? '<div class="h-0.5 flex-1 min-w-[32px] bg-gradient-to-r from-gold-400 to-gold-500/40"></div>' : ''}
+            `).join('');
+
+            grid.innerHTML = memories.map(m => {
+                const mediaHtml = m.type === 'video'
+                    ? `<video src="${m.src}" poster="${m.poster || ''}" controls playsinline loop muted onclick="event.stopPropagation()" class="w-full h-full object-cover bg-stone-950"></video>`
+                    : `<img src="${m.src}" alt="${m.label}" onerror="this.src='${m.fallback || 'https://placehold.co/800x1000/F5EFE6/A68321?text=Recuerdos....'}'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">`;
+
+                return `
+                    <div onclick="openMemoryModal(${m.id})" style="transform: rotate(${m.tilt});" class="polaroid-card rounded-2xl cursor-pointer group flex flex-col">
+                        <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-stone-900">
+                            ${mediaHtml}
+                            <button type="button" onclick="event.stopPropagation(); openMemoryModal(${m.id})" aria-label="Ampliar" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-midnight/75 backdrop-blur-sm text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-midnight transition-colors">
+                                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="pt-4 px-1 flex items-center justify-between">
+                            <h3 class="font-serif text-lg sm:text-xl font-bold text-stone-900 group-hover:text-gold-600 transition-colors">${m.label}</h3>
+                            <i data-lucide="${m.type === 'video' ? 'video' : 'camera'}" class="w-4 h-4 text-gold-600/80"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openMemoryModal(id) {
+            const item = memories.find(m => m.id === id);
+            if (!item) return;
+
+            const vmImg = document.getElementById('vm-image');
+            const vmVid = document.getElementById('vm-video');
+
+            vmVid.pause();
+            if (item.type === 'video') {
+                vmImg.classList.add('hidden');
+                vmVid.src = item.src;
+                vmVid.classList.remove('hidden');
+                vmVid.play().catch(() => {});
+            } else {
+                vmVid.classList.add('hidden');
+                vmVid.src = '';
+                vmImg.src = item.src;
+                vmImg.onerror = () => { vmImg.src = item.fallback || 'https://placehold.co/800x1000/F5EFE6/A68321?text=Recuerdos....'; };
+                vmImg.classList.remove('hidden');
+            }
+
+            document.getElementById('vm-label').textContent = item.label;
+            openModal('view-memory-modal');
+        }
+
+        function closeMemoryLightbox() {
+            const vmVid = document.getElementById('vm-video');
+            vmVid.pause();
+            vmVid.src = '';
+            closeModal('view-memory-modal');
+        }
+
+        document.getElementById('add-memory-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!uploadedMediaDataUrl) {
+                showToast('Selecciona una foto o video primero');
+                return;
+            }
+
+            const label = document.getElementById('memory-label-select').value;
+            const tilts = ['-1.5deg', '1.2deg', '-1deg', '1.5deg'];
+
+            memories.push({
+                id: Date.now(),
+                type: uploadedMediaType,
+                label: label,
+                src: uploadedMediaDataUrl,
+                tilt: tilts[memories.length % tilts.length]
+            });
+
+            renderMemories();
+            closeModal('add-memory-modal');
+            e.target.reset();
+            uploadedMediaDataUrl = '';
+            document.getElementById('memory-photo-preview').classList.add('hidden');
+            const previewVid = document.getElementById('memory-video-preview');
+            previewVid.pause();
+            previewVid.classList.add('hidden');
+            document.getElementById('memory-photo-placeholder').classList.remove('hidden');
+
+            launchCelebrationConfetti();
+            showToast(`Añadido a "${label}"`);
+        });
+
+        // ==========================================
+        // 5. CARTA DE ARIEL EDITABLE CON PERSISTENCIA (LOCALSTORAGE)
+        // ==========================================
+        const LETTER_STORAGE_KEY = 'ariel_birthday_letter_v1';
+
+        const defaultLetterData = {
+            title: 'Feliz Cumpleaños....',
+            body: `Quizás yo no tenga derecho a escribirte, pero mi corazón nunca aprendió a ignorar esta fecha. Hoy cumples un año más y, aunque ya no caminemos juntos, sigo deseando que la vida te trate con la misma dulzura con la que alguna vez trataste la mía. Extraño aquellas conversaciones que hacían más ligeros mis días y tu forma de hacerme sentir en casa. No me duele que el tiempo haya pasado, me duele que ya no pueda compartirlo contigo; aun así, me basta saber que existes en algún lugar persiguiendo tu felicidad 🫀🥹
+
+FELIZ CUMPLEAÑOS....`,
+            sender: '— Ariel'
+        };
+
+        function loadSavedLetter() {
+            try {
+                const raw = localStorage.getItem(LETTER_STORAGE_KEY);
+                const data = raw ? JSON.parse(raw) : defaultLetterData;
+                document.getElementById('letter-title-display').textContent = data.title || defaultLetterData.title;
+                document.getElementById('letter-body-display').textContent = data.body || defaultLetterData.body;
+                document.getElementById('letter-sender-display').textContent = data.sender || defaultLetterData.sender;
+            } catch (err) {}
+        }
+
+        function prepareEditLetterModal() {
+            document.getElementById('edit-title-input').value = document.getElementById('letter-title-display').textContent.trim();
+            document.getElementById('edit-body-input').value = document.getElementById('letter-body-display').textContent.trim();
+            document.getElementById('edit-sender-input').value = document.getElementById('letter-sender-display').textContent.trim();
+        }
+
+        document.getElementById('edit-letter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const updatedData = {
+                title: document.getElementById('edit-title-input').value.trim(),
+                body: document.getElementById('edit-body-input').value.trim(),
+                sender: document.getElementById('edit-sender-input').value.trim()
+            };
+
+            document.getElementById('letter-title-display').textContent = updatedData.title;
+            document.getElementById('letter-body-display').textContent = updatedData.body;
+            document.getElementById('letter-sender-display').textContent = updatedData.sender;
+
+            try {
+                localStorage.setItem(LETTER_STORAGE_KEY, JSON.stringify(updatedData));
+            } catch (err) {}
+
+            closeModal('edit-letter-modal');
+            showToast('¡Texto de la carta guardado!');
+        });
+
+        // ==========================================
+        // 5B. MENSAJE ADICIONAL AL FINAL CON PERSISTENCIA
+        // ==========================================
+        const EXTRA_MESSAGE_KEY = 'ariel_birthday_extra_message_v1';
+
+        function renderExtraMessage(msg) {
+            const box = document.getElementById('extra-message-display-box');
+            const textEl = document.getElementById('extra-message-text');
+            const badge = document.getElementById('extra-message-badge');
+            const input = document.getElementById('extra-message-input');
+
+            if (msg && msg.trim()) {
+                textEl.textContent = msg.trim();
+                box.classList.remove('hidden');
+                badge.classList.remove('hidden');
+                if (input) input.value = msg.trim();
+            } else {
+                textEl.textContent = '';
+                box.classList.add('hidden');
+                badge.classList.add('hidden');
+            }
+        }
+
+        function loadExtraMessage() {
+            try {
+                const saved = localStorage.getItem(EXTRA_MESSAGE_KEY);
+                if (saved) renderExtraMessage(saved);
+            } catch (err) {}
+        }
+
+        document.getElementById('extra-message-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('extra-message-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            renderExtraMessage(msg);
+            try {
+                localStorage.setItem(EXTRA_MESSAGE_KEY, msg);
+            } catch (err) {}
+            showToast('¡Mensaje guardado!');
+        });
+
+        // ==========================================
+        // 6. GESTIÓN DE MODALES
+        // ==========================================
+        function openModal(id) {
+            if (id === 'edit-letter-modal') prepareEditLetterModal();
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('view-memory-modal')) {
+                closeMemoryLightbox();
+            }
+            ['add-memory-modal', 'edit-letter-modal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (e.target === modal) closeModal(id);
+            });
+        });
+
+        // ==========================================
+        // 7. FONDO ANIMADO DE DESTELLOS DORADOS Y PÉTALOS
+        // ==========================================
+        const bgCanvas = document.getElementById('magic-bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let bgParticles = [];
+
+        function resizeBgCanvas() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeBgCanvas);
+        resizeBgCanvas();
+
+        function initBgCanvas() {
+            bgParticles = [];
+            const count = Math.min(55, Math.floor(window.innerWidth / 22));
+            for (let i = 0; i < count; i++) {
+                bgParticles.push({
+                    x: Math.random() * bgCanvas.width,
+                    y: Math.random() * bgCanvas.height,
+                    radius: Math.random() * 2.4 + 0.8,
+                    speedY: -(Math.random() * 0.45 + 0.15),
+                    speedX: (Math.random() - 0.5) * 0.35,
+                    alpha: Math.random() * 0.55 + 0.15,
+                    color: Math.random() > 0.35 ? '212, 175, 55' : '216, 164, 143'
+                });
+            }
+        }
+
+        function renderBgParticles() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgParticles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                if (p.y < -10) {
+                    p.y = bgCanvas.height + 10;
+                    p.x = Math.random() * bgCanvas.width;
+                }
+                bgCtx.beginPath();
+                bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                bgCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
+                bgCtx.fill();
+            });
+            requestAnimationFrame(renderBgParticles);
+        }
+
+        window.addEventListener('load', () => {
+            initBgCanvas();
+            renderBgParticles();
+            loadSavedLetter();
+            loadExtraMessage();
+            renderMemories();
+        });
+    </script>
+</body>
+</html>
